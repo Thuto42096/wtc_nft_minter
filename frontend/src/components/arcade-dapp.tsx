@@ -123,8 +123,12 @@ export function ArcadeDapp() {
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [showMintAnimation, setShowMintAnimation] = useState(false);
   const [showClaimAnimation, setShowClaimAnimation] = useState(false);
+  const [showApproveAnimation, setShowApproveAnimation] = useState(false);
+  const [showStakeAnimation, setShowStakeAnimation] = useState(false);
+  const [showWithdrawAnimation, setShowWithdrawAnimation] = useState(false);
   const lastAnimatedHash = useRef<string | null>(null);
   const lastClaimHash = useRef<string | null>(null);
+  const lastActionHash = useRef<string | null>(null);
 
   const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
@@ -363,6 +367,29 @@ export function ArcadeDapp() {
     }
   }, [isConfirmed, activeAction, hash]);
 
+  // Show approve / stake / withdraw animations when those transactions confirm
+  useEffect(() => {
+    if (!isConfirmed || !hash || hash === lastActionHash.current) return;
+    if (activeAction === "approve") {
+      lastActionHash.current = hash;
+      setShowApproveAnimation(true);
+      const t = setTimeout(() => setShowApproveAnimation(false), 2200);
+      return () => clearTimeout(t);
+    }
+    if (activeAction === "stake") {
+      lastActionHash.current = hash;
+      setShowStakeAnimation(true);
+      const t = setTimeout(() => setShowStakeAnimation(false), 2400);
+      return () => clearTimeout(t);
+    }
+    if (activeAction === "withdraw") {
+      lastActionHash.current = hash;
+      setShowWithdrawAnimation(true);
+      const t = setTimeout(() => setShowWithdrawAnimation(false), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [isConfirmed, activeAction, hash]);
+
   const statusMessage =
     getErrorMessage(combinedError) ??
     (isConnecting
@@ -460,6 +487,52 @@ export function ArcadeDapp() {
               ))}
             </div>
             <p className="claim-coin-label">WTCC CLAIMED!</p>
+          </div>
+        </div>
+      )}
+
+      {/* 8-bit yellow stamp-pop — Approve NFT success */}
+      {showApproveAnimation && (
+        <div
+          className="approve-overlay"
+          onClick={() => setShowApproveAnimation(false)}
+          role="presentation"
+        >
+          <div className="approve-celebration">
+            <div className="pixel-approve">
+              <div className="pixel-approve-tick" />
+            </div>
+            <p className="approve-label">NFT APPROVED!</p>
+          </div>
+        </div>
+      )}
+
+      {/* 8-bit purple drop — Stake NFT success */}
+      {showStakeAnimation && (
+        <div
+          className="stake-overlay"
+          onClick={() => setShowStakeAnimation(false)}
+          role="presentation"
+        >
+          <div className="stake-celebration">
+            <div className="pixel-stake">
+              <div className="pixel-stake-nft" />
+            </div>
+            <p className="stake-label">NFT STAKED!</p>
+          </div>
+        </div>
+      )}
+
+      {/* 8-bit red blast-upward — Withdraw NFT success */}
+      {showWithdrawAnimation && (
+        <div
+          className="withdraw-overlay"
+          onClick={() => setShowWithdrawAnimation(false)}
+          role="presentation"
+        >
+          <div className="withdraw-celebration">
+            <div className="pixel-withdraw" />
+            <p className="withdraw-label">NFT WITHDRAWN!</p>
           </div>
         </div>
       )}
