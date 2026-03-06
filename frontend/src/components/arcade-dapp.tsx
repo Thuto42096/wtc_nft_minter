@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatEther,
   isAddressEqual,
@@ -58,6 +58,41 @@ function getErrorMessage(error: unknown) {
     : null;
 }
 
+function getNextStep({
+  isConnected,
+  onSepolia,
+  nftBalance,
+  tokenId,
+  ownedByUser,
+  approvedForVault,
+  stakedByUser,
+  rewards,
+}: {
+  isConnected: boolean;
+  onSepolia: boolean;
+  nftBalance: bigint | undefined;
+  tokenId: bigint | undefined;
+  ownedByUser: boolean;
+  approvedForVault: boolean;
+  stakedByUser: boolean;
+  rewards: bigint | undefined;
+}): string | null {
+  if (!isConnected) return "→ Connect MetaMask to get started.";
+  if (!onSepolia) return "→ Switch your wallet to Sepolia testnet.";
+  if (!nftBalance || nftBalance === BigInt(0))
+    return "→ Mint your first WTC NFT in the Mint Forge below.";
+  if (tokenId === undefined)
+    return "→ Click a token in your inventory or type a Token ID in Vault Ops.";
+  if (ownedByUser && !approvedForVault)
+    return "→ Approve this NFT so the Vault can accept it, then stake.";
+  if (ownedByUser && approvedForVault && !stakedByUser)
+    return "→ Stake this NFT to start earning 1 WTCC per day.";
+  if (stakedByUser && rewards && rewards > BigInt(0))
+    return "→ Claim your WTCC rewards or keep staking to accumulate more.";
+  if (stakedByUser) return "→ NFT is staked and earning. Withdraw any time.";
+  return null;
+}
+
 function chunkTokenIds(tokenIds: bigint[], size: number) {
   const chunks: bigint[][] = [];
 
@@ -81,6 +116,7 @@ export function ArcadeDapp() {
   const [mintQuantity, setMintQuantity] = useState("1");
   const [tokenIdInput, setTokenIdInput] = useState("1");
   const [activeAction, setActiveAction] = useState<string | null>(null);
+  const vaultOpsRef = useRef<HTMLDivElement>(null);
   const [discoveredOwnedTokenIds, setDiscoveredOwnedTokenIds] = useState<bigint[]>([]);
   const [discoveredStakedTokenIds, setDiscoveredStakedTokenIds] = useState<bigint[]>([]);
   const [isDiscoveringTokens, setIsDiscoveringTokens] = useState(false);
@@ -187,6 +223,17 @@ export function ArcadeDapp() {
   );
   const stakedByUser = Boolean(address && staker && isAddressEqual(staker, address));
   const combinedError = writeError ?? connectError ?? switchError;
+
+  const nextStep = getNextStep({
+    isConnected,
+    onSepolia,
+    nftBalance,
+    tokenId,
+    ownedByUser,
+    approvedForVault,
+    stakedByUser,
+    rewards,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -425,6 +472,23 @@ export function ArcadeDapp() {
                 </div>
               </div>
 
+              {!isConnected && (
+                <ol className="mt-4 space-y-1 border-l-4 border-[var(--accent)] pl-4">
+                  {[
+                    "Connect MetaMask (Sepolia)",
+                    "Mint a WTC NFT",
+                    "Approve it for the vault",
+                    "Stake it to earn 1 WTCC / day",
+                    "Claim or withdraw any time",
+                  ].map((step, index) => (
+                    <li className="pixel-copy text-xs" key={step}>
+                      <span className="pixel-kicker mr-2">{index + 1}.</span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              )}
+
               <div className="mt-5 flex flex-wrap gap-3">
                 {!isConnected ? (
                   <button
@@ -483,7 +547,10 @@ export function ArcadeDapp() {
                               isSelected ? "pixel-button--accent" : "pixel-button--ghost"
                             }`}
                             key={`owned-${discoveredTokenId.toString()}`}
-                            onClick={() => setTokenIdInput(discoveredTokenId.toString())}
+                            onClick={() => {
+                              setTokenIdInput(discoveredTokenId.toString());
+                              vaultOpsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
                             type="button"
                           >
                             #{discoveredTokenId.toString()}
@@ -492,14 +559,16 @@ export function ArcadeDapp() {
                       })}
                     </div>
                   ) : (
-                    <strong>No wallet NFTs discovered yet.</strong>
+                    <strong className="text-[var(--muted)]">
+                      {isConnected ? "No wallet NFTs found — mint one below." : "Connect wallet to see your NFTs."}
+                    </strong>
                   )}
                 </div>
 
                 <div className="pixel-stat">
                   <span className="pixel-kicker">Vault-staked NFTs</span>
                   {isDiscoveringTokens ? (
-                    <strong>Refreshing staking inventory...</strong>
+                    <strong>Scanning vault...</strong>
                   ) : discoveredStakedTokenIds.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {discoveredStakedTokenIds.map((discoveredTokenId) => {
@@ -511,7 +580,10 @@ export function ArcadeDapp() {
                               isSelected ? "pixel-button--accent" : "pixel-button--ghost"
                             }`}
                             key={`staked-${discoveredTokenId.toString()}`}
-                            onClick={() => setTokenIdInput(discoveredTokenId.toString())}
+                            onClick={() => {
+                              setTokenIdInput(discoveredTokenId.toString());
+                              vaultOpsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
                             type="button"
                           >
                             #{discoveredTokenId.toString()}
@@ -520,7 +592,9 @@ export function ArcadeDapp() {
                       })}
                     </div>
                   ) : (
-                    <strong>No staked NFTs discovered for this wallet.</strong>
+                    <strong className="text-[var(--muted)]">
+                      {isConnected ? "No staked NFTs — approve and stake a wallet NFT." : "Connect wallet to see staked NFTs."}
+                    </strong>
                   )}
                 </div>
               </div>
@@ -529,8 +603,7 @@ export function ArcadeDapp() {
                 <p className="pixel-copy mt-4 text-[var(--danger)]">{discoveryError}</p>
               ) : (
                 <p className="pixel-copy mt-4">
-                  Discovery currently scans the minted supply on-chain, so it works well
-                  for this early deployment and can later be upgraded to event indexing.
+                  Click any token to load it into Vault Ops instantly.
                 </p>
               )}
             </div>
@@ -575,10 +648,13 @@ export function ArcadeDapp() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <div className="pixel-panel p-6">
+            <div className="pixel-panel p-6" ref={vaultOpsRef}>
               <div className="mb-5">
                 <h2 className="pixel-heading">Vault Ops</h2>
-                <p className="pixel-copy">Stake flow is always two transactions: approve, then stake.</p>
+                <p className="pixel-copy">
+                  Staking is two steps: <strong className="text-[var(--foreground)]">Approve</strong> the vault once,
+                  then <strong className="text-[var(--foreground)]">Stake</strong>. Earn 1 WTCC per day.
+                </p>
               </div>
 
               <label className="flex flex-col gap-2">
@@ -661,9 +737,19 @@ export function ArcadeDapp() {
             <div className="pixel-panel p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="pixel-heading">Status Feed</h2>
-                {hash ? <span className="pixel-badge">LIVE TX</span> : null}
+                {actionBusy ? (
+                  <span className="pixel-badge">BUSY</span>
+                ) : hash ? (
+                  <span className="pixel-badge">TX SENT</span>
+                ) : null}
               </div>
-              <p className="pixel-copy min-h-14">{statusMessage ?? "No active transaction. Ready for the next move."}</p>
+
+              {statusMessage ? (
+                <p className="pixel-copy min-h-[3rem]">{statusMessage}</p>
+              ) : (
+                <p className="pixel-copy min-h-[3rem] opacity-60">Idle — no active transaction.</p>
+              )}
+
               {hash ? (
                 <a
                   className="pixel-link mt-3 inline-flex"
@@ -671,8 +757,15 @@ export function ArcadeDapp() {
                   rel="noreferrer"
                   target="_blank"
                 >
-                  VIEW TX ON ETHERSCAN
+                  VIEW TX ON ETHERSCAN ↗
                 </a>
+              ) : null}
+
+              {nextStep ? (
+                <div className="mt-5 border-l-4 border-[var(--accent)] pl-4">
+                  <p className="pixel-kicker mb-1">NEXT STEP</p>
+                  <p className="pixel-copy">{nextStep}</p>
+                </div>
               ) : null}
             </div>
           </div>
