@@ -16,7 +16,7 @@ const pressStart = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "WTC Pixel Vault",
+  title: "WTC NFT Vault",
   description: "Retro WTC NFT minting and staking frontend for Sepolia.",
 };
 

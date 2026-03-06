@@ -1,4 +1,4 @@
-# WTC Pixel Vault Frontend
+# WTC NFT Vault Frontend
 
 Retro 8-bit dApp for minting and staking WTC NFTs on Ethereum Sepolia.
 

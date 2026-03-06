@@ -121,6 +121,8 @@ export function ArcadeDapp() {
   const [discoveredStakedTokenIds, setDiscoveredStakedTokenIds] = useState<bigint[]>([]);
   const [isDiscoveringTokens, setIsDiscoveringTokens] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+  const [showMintAnimation, setShowMintAnimation] = useState(false);
+  const lastAnimatedHash = useRef<string | null>(null);
 
   const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
@@ -339,6 +341,16 @@ export function ArcadeDapp() {
     };
   }, [address, publicClient, totalSupply, hash, isConfirmed]);
 
+  // Show 8-bit coin animation when a mint transaction confirms
+  useEffect(() => {
+    if (isConfirmed && activeAction === "mint" && hash && hash !== lastAnimatedHash.current) {
+      lastAnimatedHash.current = hash;
+      setShowMintAnimation(true);
+      const timer = setTimeout(() => setShowMintAnimation(false), 2800);
+      return () => clearTimeout(timer);
+    }
+  }, [isConfirmed, activeAction, hash]);
+
   const statusMessage =
     getErrorMessage(combinedError) ??
     (isConnecting
@@ -406,6 +418,22 @@ export function ArcadeDapp() {
 
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10">
+      {/* 8-bit coin mint success animation */}
+      {showMintAnimation && (
+        <div
+          className="mint-overlay"
+          onClick={() => setShowMintAnimation(false)}
+          role="presentation"
+        >
+          <div className="mint-celebration">
+            <div className="pixel-coin">
+              <div className="pixel-coin-center" />
+            </div>
+            <p className="pixel-coin-label">NFT MINTED!</p>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <section className="pixel-panel overflow-hidden p-6 sm:p-8">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(83,247,194,0.2),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(255,222,89,0.18),transparent_28%)]" />
@@ -413,7 +441,7 @@ export function ArcadeDapp() {
             <div className="max-w-3xl space-y-4">
               <p className="pixel-kicker">Sepolia // MetaMask // 8-bit staking zone</p>
               <h1 className="pixel-title text-3xl leading-tight sm:text-4xl">
-                WTC PIXEL VAULT
+                WTC NFT VAULT
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-[var(--muted)] sm:text-base">
                 Mint your WTC NFT, approve the vault, stake it for 1 WTCC per day,
