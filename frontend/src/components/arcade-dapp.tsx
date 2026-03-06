@@ -122,7 +122,9 @@ export function ArcadeDapp() {
   const [isDiscoveringTokens, setIsDiscoveringTokens] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [showMintAnimation, setShowMintAnimation] = useState(false);
+  const [showClaimAnimation, setShowClaimAnimation] = useState(false);
   const lastAnimatedHash = useRef<string | null>(null);
+  const lastClaimHash = useRef<string | null>(null);
 
   const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
@@ -351,6 +353,16 @@ export function ArcadeDapp() {
     }
   }, [isConfirmed, activeAction, hash]);
 
+  // Show WTCC burst animation when a claim transaction confirms
+  useEffect(() => {
+    if (isConfirmed && activeAction === "claim" && hash && hash !== lastClaimHash.current) {
+      lastClaimHash.current = hash;
+      setShowClaimAnimation(true);
+      const timer = setTimeout(() => setShowClaimAnimation(false), 2400);
+      return () => clearTimeout(timer);
+    }
+  }, [isConfirmed, activeAction, hash]);
+
   const statusMessage =
     getErrorMessage(combinedError) ??
     (isConnecting
@@ -418,7 +430,7 @@ export function ArcadeDapp() {
 
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10">
-      {/* 8-bit coin mint success animation */}
+      {/* 8-bit gold coin — mint success */}
       {showMintAnimation && (
         <div
           className="mint-overlay"
@@ -430,6 +442,24 @@ export function ArcadeDapp() {
               <div className="pixel-coin-center" />
             </div>
             <p className="pixel-coin-label">NFT MINTED!</p>
+          </div>
+        </div>
+      )}
+
+      {/* 8-bit teal coin burst — WTCC claim success */}
+      {showClaimAnimation && (
+        <div
+          className="claim-overlay"
+          onClick={() => setShowClaimAnimation(false)}
+          role="presentation"
+        >
+          <div className="claim-celebration">
+            <div className="wtcc-burst">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className={`wtcc-burst-coin wtcc-burst-coin--${i}`} />
+              ))}
+            </div>
+            <p className="claim-coin-label">WTCC CLAIMED!</p>
           </div>
         </div>
       )}
