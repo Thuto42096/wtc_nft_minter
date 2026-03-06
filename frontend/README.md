@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WTC Pixel Vault Frontend
 
-## Getting Started
+Next.js frontend for the Sepolia WTC NFT minting + staking dApp.
 
-First, run the development server:
+## Features
+
+- MetaMask wallet connect
+- Mint WTC NFTs
+- Approve + stake NFTs
+- Claim WTCC rewards
+- Unstake NFTs
+- Auto-discover wallet and vault-staked NFTs
+- Retro 8-bit arcade UI
+
+## Local development
+
+1. Create `frontend/.env` from `frontend/.env.example`
+2. Start the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required env vars:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `NEXT_PUBLIC_SEPOLIA_RPC_URL`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Vercel deployment
 
-## Learn More
+This repository is a monorepo-style layout:
 
-To learn more about Next.js, take a look at the following resources:
+- Hardhat project at the repo root
+- Next.js app in `frontend/`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Vercel dashboard settings
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+When importing this repo into Vercel, set:
 
-## Deploy on Vercel
+- **Framework Preset:** `Next.js`
+- **Root Directory:** `frontend`
+- **Install Command:** leave default or use `npm install`
+- **Build Command:** leave default or use `npm run build`
+- **Output Directory:** leave default
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Environment variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Add this variable in Vercel for Preview and Production:
+
+- `NEXT_PUBLIC_SEPOLIA_RPC_URL`
+
+Example value:
+
+- `https://ethereum-sepolia-rpc.publicnode.com`
+
+### Deploy steps
+
+1. Push this repo to GitHub
+2. Import the repository into Vercel
+3. Set the **Root Directory** to `frontend`
+4. Add `NEXT_PUBLIC_SEPOLIA_RPC_URL`
+5. Deploy
+
+### Vercel CLI note
+
+For monorepos, run Vercel CLI commands from the **repository root**, not from `frontend/`.
+
+Example:
+
+```bash
+vercel link --repo
+```
+
+Then choose the project that points at the `frontend` root directory.
+
+## Contract configuration
+
+The frontend is already wired to these deployed Sepolia contracts in `src/lib/contracts.ts`:
+
+- `WTC_NFT`: `0xE73A1CA4e89b1afFE6a96d7d5b6D6F8c1669b12D`
+- `WTC_Coin`: `0xfd3e678d9dAE2762B0205254E60723f845b024cA`
+- `StakingVault`: `0x5a746227730c729c9Fcc26Ccd0fB0a111E1D5bB5`
+
+## Validation
+
+Validated locally with:
+
+- `npm run lint`
+- `npm run build`
+- `npm run start`
